@@ -49,21 +49,30 @@ A high-performance, strictly monochrome (Black & White) web application designed
 
 ## 🛠️ How to Run
 
-Because this project is built using zero-dependency modern HTML5, CSS3, and ES6 JavaScript, you can open and test it immediately:
+### ⚡ Quick Start (Full Stack: React + Express API)
+Run both backend and frontend concurrently with a single command from the root directory:
 
-### Option 1: Direct in Browser
-Double-click [index.html](file:///C:/Users/HP/Desktop/loginpageqatesting/index.html) or right click -> **Open with Chrome / Edge / Firefox**.
-
-### Option 2: Using Node `http-server` or Python
-From PowerShell in the project directory:
 ```powershell
-# Python
-python -m http.server 8080
-
-# Or npx
-npx serve .
+npm run dev
+# or
+npm start
 ```
-Then navigate to `http://localhost:8080` (or the port specified).
+* **Frontend Portal (React 18 + Vite + Tailwind 4)**: [http://localhost:3000](http://localhost:3000)
+* **Backend API (Node/Express + MongoDB)**: [http://localhost:5000](http://localhost:5000)
+
+### 🖥️ Running Services Individually
+```powershell
+# Backend API only
+cd server
+npm start
+
+# Frontend React Client only
+cd client
+npm run dev
+```
+
+### 🌐 Standalone Static Version (Zero Dependencies)
+Double-click [index.html](file:///C:/Users/HP/Desktop/loginpageqatesting/index.html) or open with Chrome / Edge / Firefox directly without needing Node.js.
 
 ---
 

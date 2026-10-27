@@ -1,0 +1,29 @@
+{
+  "name": "loginpageqatesting",
+  "version": "1.0.0",
+  "description": "A high-performance, strictly monochrome (Black & White) web application designed specifically for **Quality Assurance (QA)** and **Quality Control (QC)** testing of authentication flows, internationalization, fault injection, accessibility, and UI states.",
+  "main": "app.js",
+  "scripts": {
+    "dev": "concurrently -n \"SERVER,CLIENT\" -c \"cyan,magenta\" \"npm --prefix server run dev\" \"npm --prefix client run dev\"",
+    "start": "concurrently -n \"SERVER,CLIENT\" -c \"cyan,magenta\" \"npm --prefix server start\" \"npm --prefix client run dev\"",
+    "server": "npm --prefix server start",
+    "client": "npm --prefix client run dev",
+    "build": "npm --prefix client run build",
+    "test": "echo \"Ready for QA tests\" && exit 0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kdlskd/loginpageqatesting.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Kdlskd/loginpageqatesting/issues"
+  },
+  "homepage": "https://github.com/Kdlskd/loginpageqatesting#readme",
+  "devDependencies": {
+    "concurrently": "^10.0.6"
+  }
+}
