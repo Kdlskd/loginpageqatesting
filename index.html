@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QA Monoverse | Login & QC Testing Portal</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="top-nav">
+    <div class="brand-wrapper">
+      <div class="brand-logo" aria-hidden="true">QA</div>
+      <div>
+        <span class="brand-title" data-i18n="appTitle">QA Monoverse</span>
+        <span class="brand-badge" id="envBadge">QC ENV 1.0</span>
+      </div>
+    </div>
+
+    <div class="nav-controls">
+      <!-- Language Selector -->
+      <div class="control-group">
+        <label for="langSelect" class="visually-hidden" style="display:none;">Language</label>
+        <select id="langSelect" class="lang-select" aria-label="Select Language">
+          <option value="en">English (EN)</option>
+          <option value="hi">हिन्दी (Hindi)</option>
+          <option value="pt">Português (PT)</option>
+          <option value="es">Español (ES)</option>
+        </select>
+      </div>
+
+      <!-- Theme Switcher (Night / Light Mode) -->
+      <div class="control-group">
+        <button id="themeToggleBtn" class="theme-toggle-btn" aria-label="Toggle Night and Light Mode">
+          <span id="themeIcon">☀️</span>
+          <span id="themeLabel" data-i18n="themeToggleLight">Light Mode</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Notification Container for QA Alerts -->
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <!-- Main Content Area -->
+  <main class="main-layout">
+    
+    <!-- AUTHENTICATION FORM VIEW -->
+    <div id="authWrapper" class="auth-wrapper">
+      <div class="card">
+        
+        <div class="card-header">
+          <h1 data-i18n="loginHeading">Account Sign In</h1>
+          <p data-i18n="loginSubheading">Enter your test credentials to access the QC environment.</p>
+        </div>
+
+        <form id="loginForm" novalidate>
+          
+          <!-- Identifier Input -->
+          <div class="form-group">
+            <label for="identifierInput" class="form-label" data-i18n="labelIdentifier">Email or Username</label>
+            <input 
+              type="text" 
+              id="identifierInput" 
+              name="identifier" 
+              class="input-box" 
+              data-i18n-placeholder="placeholderIdentifier"
+              placeholder="tester@qa-matrix.com or testuser"
+              autocomplete="username"
+              required
+            >
+            <div id="identifierError" class="error-text" role="alert"></div>
+          </div>
+
+          <!-- Password Input -->
+          <div class="form-group">
+            <label for="passwordInput" class="form-label" data-i18n="labelPassword">Password</label>
+            <div class="password-container">
+              <input 
+                type="password" 
+                id="passwordInput" 
+                name="password" 
+                class="input-box" 
+                data-i18n-placeholder="placeholderPassword"
+                placeholder="Enter your password"
+                autocomplete="current-password"
+                required
+              >
+              <button 
+                type="button" 
+                id="togglePasswordBtn" 
+                class="toggle-password-btn" 
+                data-i18n="showPassword"
+                aria-label="Toggle password visibility"
+              >Show</button>
+            </div>
+            <div id="capsLockAlert" class="caps-lock-warning" data-i18n="capsLockWarning" role="alert">
+              Warning: Caps Lock is ON
+            </div>
+            <div id="passwordError" class="error-text" role="alert"></div>
+          </div>
+
+          <!-- Options: Remember Me & Forgot Password -->
+          <div class="form-options">
+            <label class="checkbox-label">
+              <input type="checkbox" id="rememberMeCheckbox">
+              <span data-i18n="rememberMe">Remember me for 30 days</span>
+            </label>
+            <a href="#" id="forgotPasswordLink" class="forgot-link" data-i18n="forgotPassword">Forgot password?</a>
+          </div>
+
+          <!-- Submit Button -->
+          <button type="submit" id="btnSignIn" class="btn-submit">
+            <span id="btnSignInText" data-i18n="btnSignIn">Sign In</span>
+          </button>
+
+        </form>
+
+        <!-- QA / QC Test Presets & Quick Autofill -->
+        <div class="qa-presets-box">
+          <h3 data-i18n="qaHelperTitle">QA Test Scenarios & Presets</h3>
+          <p data-i18n="qaHelperSubtitle">Click any profile below to autofill and test specific validation rules:</p>
+          <div class="presets-grid">
+            <button type="button" class="preset-chip" id="presetValidBtn" data-i18n="presetValid">
+              Valid Standard User
+            </button>
+            <button type="button" class="preset-chip" id="presetAdminBtn" data-i18n="presetAdmin">
+              Valid Admin User
+            </button>
+            <button type="button" class="preset-chip" id="presetLockedBtn" data-i18n="presetLocked">
+              Locked / Suspended User
+            </button>
+            <button type="button" class="preset-chip" id="presetInvalidBtn" data-i18n="presetInvalid">
+              Invalid Credentials
+            </button>
+            <button type="button" class="preset-chip" id="presetSqliBtn" data-i18n="presetSpecialChars">
+              SQLi / Special Chars Test
+            </button>
+          </div>
+        </div>
+
+        <!-- QA Fault Injection & Debug Controls -->
+        <div class="qa-debug-panel">
+          <h4 data-i18n="qaToolsHeading">QA / QC Debug Tools</h4>
+          <div class="debug-options">
+            <button type="button" class="debug-btn" id="toggleDelayBtn">
+              [ ] <span data-i18n="simulateDelay">Simulate Slow Network (2s)</span>
+            </button>
+            <button type="button" class="debug-btn" id="toggle500Btn">
+              [ ] <span data-i18n="simulate500">Simulate 500 API Error</span>
+            </button>
+            <button type="button" class="debug-btn" id="toggleNetworkDropBtn">
+              [ ] <span data-i18n="simulateNetDrop">Simulate Network Drop</span>
+            </button>
+            <button type="button" class="debug-btn" id="clearStorageBtn" data-i18n="clearStorage">
+              Clear Local & Session Storage
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- DASHBOARD VIEW (AUTHENTICATED POST-LOGIN STATE) -->
+    <div id="dashboardView" class="dashboard-view">
+      <div class="card">
+        
+        <div class="dash-header">
+          <div class="dash-user-info">
+            <h2><span data-i18n="dashWelcome">Welcome back</span>, <span id="dashUserName">Tester</span>!</h2>
+            <div class="dash-user-meta">
+              <span><span data-i18n="dashRole">Role</span>: <strong id="dashUserRole">QA Specialist</strong></span>
+              <span><span data-i18n="dashStatus">Status</span>: <strong class="dash-badge" data-i18n="dashSessionActive">Session Active</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- QC Metrics Grid -->
+        <div class="dash-metrics-grid">
+          <div class="metric-card">
+            <div class="metric-label" data-i18n="dashTotalTests">Test Cases Run</div>
+            <div class="metric-value" id="valTotalTests">148</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label" data-i18n="dashPassedTests">Passed Verification</div>
+            <div class="metric-value" id="valPassedTests">142</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label" data-i18n="dashFailedTests">Defects Flagged</div>
+            <div class="metric-value" id="valFailedTests">6</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label" data-i18n="dashCoverage">Code Coverage</div>
+            <div class="metric-value">98.4%</div>
+          </div>
+        </div>
+
+        <!-- Audit & Auth Event Log Section -->
+        <div class="logs-section">
+          <h3>
+            <span data-i18n="dashRecentLogs">Audit & Auth Logs</span>
+            <span style="font-size:0.75rem; text-transform:none; color:var(--text-secondary);">Real-Time Session Stream</span>
+          </h3>
+          <ul id="auditLogList" class="logs-list">
+            <!-- Dynamically populated -->
+          </ul>
+        </div>
+
+        <!-- Actions -->
+        <div class="dash-actions">
+          <button type="button" id="btnLogout" class="btn-submit" style="width: auto;" data-i18n="dashBtnLogout">
+            Sign Out
+          </button>
+          <button type="button" id="btnResetData" class="btn-secondary" data-i18n="dashBtnResetData">
+            Reset Test Data
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <p>QA MONOVERSE PLATFORM &bull; QUALITY ASSURANCE &amp; CONTROL TESTING BENCHMARK &bull; STRICT B&amp;W EDITION</p>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="translations.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
