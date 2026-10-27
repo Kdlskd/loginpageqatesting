@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 
 const auditLogSchema = new mongoose.Schema({
+  _id: {
+    type: String,
+    default: () => new mongoose.Types.ObjectId().toString()
+  },
   action: {
     type: String,
     required: true
@@ -22,6 +26,6 @@ const auditLogSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   }
-});
+}, { _id: false });
 
 module.exports = mongoose.model('AuditLog', auditLogSchema);

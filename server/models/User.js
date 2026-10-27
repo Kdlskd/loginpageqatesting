@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
+  _id: {
+    type: String,
+    default: () => new mongoose.Types.ObjectId().toString()
+  },
   email: {
     type: String,
     required: true,
@@ -13,6 +17,7 @@ const userSchema = new mongoose.Schema({
     required: true,
     unique: true,
     trim: true,
+    lowercase: true,
     minlength: 3
   },
   password: {
@@ -26,7 +31,7 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['QA Specialist', 'System Administrator', 'QC Analyst', 'Guest'],
+    enum: ['QA Specialist', 'Lead QA Engineer', 'System Administrator', 'QC Analyst', 'Restricted User', 'Guest'],
     default: 'QA Specialist'
   },
   status: {
@@ -38,6 +43,6 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   }
-});
+}, { _id: false });
 
 module.exports = mongoose.model('User', userSchema);

@@ -70,9 +70,21 @@ app.use((req, res, next) => {
 async function syncToMongo() {
   try {
     for (const u of memUsers) {
-      const exists = await User.findOne({ email: u.email });
-      if (!exists) {
-        await User.create(u);
+      try {
+        const cleanEmail = u.email.toLowerCase().trim();
+        const cleanUsername = u.username.toLowerCase().trim();
+        const exists = await User.findOne({
+          $or: [{ email: cleanEmail }, { username: cleanUsername }]
+        });
+        if (!exists) {
+          await User.create({
+            ...u,
+            email: cleanEmail,
+            username: cleanUsername
+          });
+        }
+      } catch (userErr) {
+        console.error(`[MongoDB Sync User Error] ${u.email}:`, userErr.message);
       }
     }
     console.log('[MongoDB] Synced test accounts into MongoDB successfully.');
@@ -156,6 +168,21 @@ app.post('/api/auth/signup', async (req, res) => {
         status: 'active'
       });
 
+      // Keep memUsers in sync
+      const memExisting = memUsers.find(u => u.email.toLowerCase() === cleanEmail || u.username.toLowerCase() === cleanUsername);
+      if (!memExisting) {
+        memUsers.push({
+          _id: newUser._id,
+          fullName: newUser.fullName,
+          email: cleanEmail,
+          username: cleanUsername,
+          password,
+          role: newUser.role,
+          status: newUser.status,
+          createdAt: new Date()
+        });
+      }
+
       const token = jwt.sign({ id: newUser._id, role: newUser.role }, JWT_SECRET, { expiresIn: '7d' });
       return res.status(201).json({
         token,
@@ -222,7 +249,10 @@ app.post('/api/auth/login', async (req, res) => {
       user = await User.findOne({
         $or: [{ email: cleanId }, { username: cleanId }]
       });
-    } else {
+    }
+
+    // Resilient fallback to memUsers if not found in Mongo (or while Mongo initializes)
+    if (!user) {
       user = memUsers.find(u => u.email.toLowerCase() === cleanId || u.username.toLowerCase() === cleanId);
     }
 

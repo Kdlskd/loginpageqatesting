@@ -22,6 +22,42 @@ export default function App() {
   const [logs, setLogs] = useState([]);
   const [toasts, setToasts] = useState([]);
 
+  // Seed default test accounts for offline/standalone mode
+  const defaultOfflineUsers = [
+    {
+      fullName: 'Elena Rostova',
+      email: 'tester@qa-matrix.com',
+      username: 'testuser',
+      password: 'SecretPass123!',
+      role: 'Lead QA Engineer',
+      status: 'active'
+    },
+    {
+      fullName: 'Marcus Vance',
+      email: 'admin@qa-matrix.com',
+      username: 'admin',
+      password: 'AdminRoot2026#',
+      role: 'System Administrator',
+      status: 'active'
+    },
+    {
+      fullName: 'David K.',
+      email: 'locked@qa-matrix.com',
+      username: 'lockeduser',
+      password: 'LockedPass999!',
+      role: 'Restricted User',
+      status: 'locked'
+    }
+  ];
+
+  const [offlineUsers, setOfflineUsers] = useState(() => {
+    try {
+      const saved = localStorage.getItem('qa_offline_users');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return defaultOfflineUsers;
+  });
+
   // Login form states
   const [identifier, setIdentifier] = useState(() => localStorage.getItem('qa_remembered_id') || '');
   const [password, setPassword] = useState('');
@@ -123,6 +159,7 @@ export default function App() {
   const handleClearStorage = () => {
     localStorage.clear();
     sessionStorage.clear();
+    setOfflineUsers(defaultOfflineUsers);
     setIdentifier('');
     setPassword('');
     setRememberMe(false);
@@ -133,15 +170,16 @@ export default function App() {
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
 
+    const cleanIdentifier = identifier.trim();
     const errors = {};
-    if (!identifier.trim()) {
+    if (!cleanIdentifier) {
       errors.identifier = 'errIdentifierRequired';
-    } else if (identifier.includes('@')) {
+    } else if (cleanIdentifier.includes('@')) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(identifier.trim())) {
+      if (!emailRegex.test(cleanIdentifier)) {
         errors.identifier = 'errIdentifierInvalid';
       }
-    } else if (identifier.trim().length < 3) {
+    } else if (cleanIdentifier.length < 3) {
       errors.identifier = 'errIdentifierInvalid';
     }
 
@@ -182,7 +220,7 @@ export default function App() {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier, password })
+        body: JSON.stringify({ identifier: cleanIdentifier, password })
       });
 
       const data = await res.json();
@@ -190,9 +228,13 @@ export default function App() {
 
       if (!res.ok) {
         const errorMsgKey = data.errorKey || 'errInvalidCredentials';
-        setLoginErrors({ password: errorMsgKey });
+        if (errorMsgKey === 'errAccountLocked') {
+          setLoginErrors({ identifier: errorMsgKey });
+        } else {
+          setLoginErrors({ password: errorMsgKey });
+        }
         addToast(t[errorMsgKey] || data.message);
-        recordAuditLog('AUTH_ATTEMPT', 'FAIL', `Failed attempt for "${identifier}"`);
+        recordAuditLog('AUTH_ATTEMPT', 'FAIL', `Failed attempt for "${cleanIdentifier}"`);
         return;
       }
 
@@ -202,33 +244,40 @@ export default function App() {
       recordAuditLog('AUTH_SUCCESS', 'OK', `User "${data.user.fullName}" authenticated`);
 
       if (rememberMe) {
-        localStorage.setItem('qa_remembered_id', identifier);
+        localStorage.setItem('qa_remembered_id', cleanIdentifier);
       } else {
         localStorage.removeItem('qa_remembered_id');
       }
     } catch {
       // Fallback direct mock authentication
       setLoading(false);
-      if (identifier.toLowerCase().includes('locked')) {
-        setLoginErrors({ identifier: 'errAccountLocked' });
-        addToast(t.errAccountLocked);
-        recordAuditLog('AUTH_ATTEMPT', 'BLOCKED', `Locked account for "${identifier}"`);
-        return;
-      }
-      if (password === 'SecretPass123!' || password === 'AdminRoot2026#') {
-        const mockUser = {
-          fullName: identifier.includes('admin') ? 'Marcus Vance' : 'Elena Rostova',
-          username: identifier,
-          email: identifier.includes('@') ? identifier : `${identifier}@qa-matrix.com`,
-          role: identifier.includes('admin') ? 'System Administrator' : 'QA Specialist'
-        };
-        setUser(mockUser);
-        addToast(t.loginSuccess);
-        recordAuditLog('AUTH_SUCCESS', 'OK', `User "${mockUser.fullName}" authenticated (Offline Engine)`);
-      } else {
+      const cleanId = cleanIdentifier.toLowerCase();
+      const matched = offlineUsers.find(
+        (u) => (u.email && u.email.toLowerCase() === cleanId) || (u.username && u.username.toLowerCase() === cleanId)
+      );
+
+      if (!matched || matched.password !== password) {
         setLoginErrors({ password: 'errInvalidCredentials' });
         addToast(t.errInvalidCredentials);
-        recordAuditLog('AUTH_ATTEMPT', 'FAIL', `Invalid login for "${identifier}"`);
+        recordAuditLog('AUTH_ATTEMPT', 'FAIL', `Invalid login for "${cleanIdentifier}"`);
+        return;
+      }
+
+      if (matched.status === 'locked') {
+        setLoginErrors({ identifier: 'errAccountLocked' });
+        addToast(t.errAccountLocked);
+        recordAuditLog('AUTH_ATTEMPT', 'BLOCKED', `Locked account for "${cleanIdentifier}"`);
+        return;
+      }
+
+      setUser(matched);
+      addToast(t.loginSuccess);
+      recordAuditLog('AUTH_SUCCESS', 'OK', `User "${matched.fullName}" authenticated (Offline Engine)`);
+
+      if (rememberMe) {
+        localStorage.setItem('qa_remembered_id', cleanIdentifier);
+      } else {
+        localStorage.removeItem('qa_remembered_id');
       }
     }
   };
@@ -285,6 +334,23 @@ export default function App() {
         return;
       }
 
+      // Keep offline users synced with newly created account
+      const cleanEmail = formData.email.toLowerCase().trim();
+      const cleanUsername = formData.username.toLowerCase().trim();
+      const newUser = {
+        fullName: formData.fullName || 'QA Tester',
+        email: cleanEmail,
+        username: cleanUsername,
+        password: formData.password,
+        role: 'QA Specialist',
+        status: 'active'
+      };
+      setOfflineUsers((prev) => {
+        const next = [...prev.filter((u) => u.email !== cleanEmail && u.username !== cleanUsername), newUser];
+        localStorage.setItem('qa_offline_users', JSON.stringify(next));
+        return next;
+      });
+
       // Success
       addToast(t.signupSuccess);
       recordAuditLog('USER_REGISTER', 'OK', `New account created: "${formData.username}"`);
@@ -293,6 +359,33 @@ export default function App() {
       setPassword(formData.password);
     } catch {
       setLoading(false);
+      const cleanEmail = formData.email.toLowerCase().trim();
+      const cleanUsername = formData.username.toLowerCase().trim();
+      const existing = offlineUsers.find(
+        (u) => (u.email && u.email.toLowerCase() === cleanEmail) || (u.username && u.username.toLowerCase() === cleanUsername)
+      );
+
+      if (existing) {
+        setSignupErrors({ email: 'errUserExists' });
+        addToast(t.errUserExists);
+        return;
+      }
+
+      const newUser = {
+        fullName: formData.fullName || 'QA Tester',
+        email: cleanEmail,
+        username: cleanUsername,
+        password: formData.password,
+        role: 'QA Specialist',
+        status: 'active'
+      };
+
+      setOfflineUsers((prev) => {
+        const next = [...prev, newUser];
+        localStorage.setItem('qa_offline_users', JSON.stringify(next));
+        return next;
+      });
+
       addToast(t.signupSuccess);
       recordAuditLog('USER_REGISTER', 'OK', `New account created: "${formData.username}" (Offline Engine)`);
       setActiveTab('login');
